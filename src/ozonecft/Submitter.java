@@ -246,7 +246,7 @@ public class Submitter {
                     DHTStorageUnit dsu = new DHTStorageUnit(null, -1, (Serializable) fc);
 
                     //((StorageAdapterInterface)P2P).blocking_save("input.data" + number, dsu, false);
-                    community.save(fc.getName(), dsu, false);
+                    community.save(dsu, fc.getName());
 
                     //save("input.data" + number, fc, false, number); 
                     // number++;
@@ -366,6 +366,13 @@ public class Submitter {
             mapperId = community.plug(jar, app, mapargs);
             System.err.println("mapperId = " + mapperId);
             result = community.waitJob(mapperId);
+            
+            ArrayList al = (ArrayList)result;
+            for (int i = 0; i<al.size(); ++i)
+            {
+                System.out.println(al.get(i));
+            }
+            
             //community.removeJob(mapperId);
         } catch (Exception ex) {
             //Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
@@ -433,7 +440,7 @@ public class Submitter {
             Date dateEnd = simpleDateFormat.parse(end);
 
             //time is always 00:00:00 so rounding should help to ignore the missing hour when going from winter to summer time as well as the extra hour in the other direction
-            diff = Math.round((dateEnd.getTime() - dateStart.getTime()) / (double) 86400000);
+            diff = Math.round((dateEnd.getTime() - dateStart.getTime()) / (double) 86400000)+1; // +1 because the difference must be "inclusive" (15<->1=15)
         } catch (Exception e) {
             //handle the exception according to your own situation
         }

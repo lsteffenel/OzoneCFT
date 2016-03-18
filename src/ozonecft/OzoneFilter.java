@@ -55,14 +55,18 @@ public class OzoneFilter extends Distributed {
      *
      * @return MultiMap<K, V> accumulator with calculated data
      */
-    public Serializable finalizeApplication() {
+    @Override
+    public Serializable finalizeApplication(ArrayList tasksResults) {
         if (debug) {
 
             System.err.println("## finalizeConsumer ");
 
         }
-        //return getAccumulator();
-        return null;
+        
+        
+        //return null;
+        
+        return tasksResults;
     }
 
     @Override
@@ -79,10 +83,10 @@ public class OzoneFilter extends Distributed {
         float rulat = Float.parseFloat(procargs[2]);
         // left-upper longitude
         float rulon = Float.parseFloat(procargs[3]);
-        
+
         float step = Float.parseFloat(procargs[4]);
         //float step = 1;
-        
+
         String dstart = procargs[5];
         String dend = procargs[6];
         String period = procargs[7];
@@ -98,12 +102,12 @@ public class OzoneFilter extends Distributed {
 
         allcoords = new coordinates[gridx][gridy];
 
-        for (float x1 = lllon; x1 < rulon; x1=x1+step) {
-            for (float y1 = lllat; y1 < rulat; y1=y1+step) {
+        for (float x1 = lllon; x1 < rulon; x1 = x1 + step) {
+            for (float y1 = lllat; y1 < rulat; y1 = y1 + step) {
                 float x2 = x1 + step;
                 float y2 = y1 + step;
                 allcoords[Math.round(x1 - lllon)][Math.round(y1 - lllat)] = new coordinates(x1, x2, y1, y2);
-                System.err.println(x1 + " <-> " + x2 + " / " + y1 + " <-> " + y2);
+                //System.err.println(x1 + " <-> " + x2 + " / " + y1 + " <-> " + y2);
             }
         }
 
@@ -135,8 +139,8 @@ public class OzoneFilter extends Distributed {
         long start, stop;
 
         start = System.currentTimeMillis();
-        
-        String result="";
+
+        String result = "";
 
         int myposy = (int) (number / allcoords.length);
         int myposx = number - (myposy * allcoords.length);
@@ -201,7 +205,6 @@ public class OzoneFilter extends Distributed {
 
                                 //mmap.add(coords, values);
                                 //System.out.println("(" + coords[0] + "," + coords[1] + ") - " + values[2] + " " + values[3]);
-
                                 al.add(new mesures(coords[0], coords[1], values[0], values[1], values[2], values[3]));
 
                             }
@@ -258,32 +261,29 @@ public class OzoneFilter extends Distributed {
         double stdev = Math.sqrt(diff / count);
         //System.out.println("stedv = " + stdev + " ; moyenne = " + moyenne);
 
-        
         // alert
         if (!al.isEmpty()) {
-            
-            mesures mes = (mesures)al.get(al.size()-1);
-            
+
+            mesures mes = (mesures) al.get(al.size() - 1);
+
             //Iterator it = al.iterator();
             //while (it.hasNext()) {
             //    mesures mes = (mesures) it.next();
-                if (mes.value > 0) {
-                    if (mes.value < moyenne - (1.5 * stdev)) {
-                        
+            if (mes.value > 0) {
+                if (mes.value < moyenne - (1.5 * stdev)) {
+
                         //%08d%n
-                        //System.out.format("%4d%02d%02d : (%.1f,%.1f) %d (moy=%f, stdev=%f) - EVENT%n",mes.yyyy,mes.mm,mes.dd,mes.lat,mes.lon,mes.value,moyenne,stdev);
-                        System.out.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f EVENT%n",mes.yyyy,mes.mm,mes.dd,mes.lat,mes.lon,mes.value,moyenne,stdev);
-                        result = String.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f EVENT%n",mes.yyyy,mes.mm,mes.dd,mes.lat,mes.lon,mes.value,moyenne,stdev);
-                        //System.out.println(mes.yyyy +"" + mes.mm +""+ mes.dd + " : (" +mes.lat+","+mes.lon+") "+mes.value + "(moy=" + moyenne + ", stdev=" + stdev + ")");
-                    }
-                    else 
-                    {
+                    //System.out.format("%4d%02d%02d : (%.1f,%.1f) %d (moy=%f, stdev=%f) - EVENT%n",mes.yyyy,mes.mm,mes.dd,mes.lat,mes.lon,mes.value,moyenne,stdev);
+                    //System.out.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f EVENT%n", mes.yyyy, mes.mm, mes.dd, mes.lat, mes.lon, mes.value, moyenne, stdev);
+                    result = String.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f EVENT", mes.yyyy, mes.mm, mes.dd, mes.lat, mes.lon, mes.value, moyenne, stdev);
+                    //System.out.println(mes.yyyy +"" + mes.mm +""+ mes.dd + " : (" +mes.lat+","+mes.lon+") "+mes.value + "(moy=" + moyenne + ", stdev=" + stdev + ")");
+                } else {
 //                        System.out.format("%4d%02d%02d : (%.1f,%.1f) %d (moy=%f, stdev=%f)%n",mes.yyyy,mes.mm,mes.dd,mes.lat,mes.lon,mes.value,moyenne,stdev);
-                        System.out.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f NORMAL%n",mes.yyyy,mes.mm,mes.dd,mes.lat,mes.lon,mes.value,moyenne,stdev);
-                        result = String.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f NORMAL%n",mes.yyyy,mes.mm,mes.dd,mes.lat,mes.lon,mes.value,moyenne,stdev);
-                     
-                    }
+                    //System.out.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f NORMAL%n", mes.yyyy, mes.mm, mes.dd, mes.lat, mes.lon, mes.value, moyenne, stdev);
+                    result = String.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f NORMAL", mes.yyyy, mes.mm, mes.dd, mes.lat, mes.lon, mes.value, moyenne, stdev);
+
                 }
+            }
             //}
         }
 
@@ -291,6 +291,11 @@ public class OzoneFilter extends Distributed {
 
         System.err.println("Task " + number + " done (" + (stop - start) + ")");
 
+//        try {
+//            Thread.sleep(1000);
+//        } catch (InterruptedException ex) {
+//            Logger.getLogger(OzoneFilter.class.getName()).log(Level.SEVERE, null, ex);
+//        }
         return result;
 
     }
