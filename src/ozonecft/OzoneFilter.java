@@ -41,14 +41,14 @@ public class OzoneFilter extends Distributed {
      * @param number block numeber in a segment (0 a <i>n</i> - 1).
      * @param value block content
      */
-    @Override
-    public void consumeBlock(Serializable result_accumulator, int number, Serializable value) {
-        if (debug) {
-            System.err.println("## consumeBlock " + number + ", " + value);
-        }
-
-        // ((MultiMap<K, V>) result_accumulator).putAll((MultiMap<K, V>) value);
-    }
+//    @Override
+//    public void consumeBlock(Serializable result_accumulator, int number, Serializable value) {
+//        if (debug) {
+//            System.err.println("## consumeBlock " + number + ", " + value);
+//        }
+//
+//        // ((MultiMap<K, V>) result_accumulator).putAll((MultiMap<K, V>) value);
+//    }
 
     /**
      * Finalizes the consumer, returing its accumulator.
@@ -58,18 +58,15 @@ public class OzoneFilter extends Distributed {
     @Override
     public Serializable finalizeApplication(ArrayList tasksResults) {
         if (debug) {
-
+            
             System.err.println("## finalizeConsumer ");
 
         }
-        
-        
+
         //return null;
-        
         return tasksResults;
     }
 
-    @Override
     public Serializable initializeApplication() {
         //Serializable acc = new MultiMap<K, V>();
 
@@ -241,50 +238,52 @@ public class OzoneFilter extends Distributed {
                 }
             }
         }
-        float moyenne = (float) sum / count;
+        if (sum > 0 && count > 0) { //otherwise we risk a NaN
+            float moyenne = (float) sum / count;
         //System.out.println("sum = " + sum + " ; count = " + count + " ; moyenne = " + moyenne);
 
-        // stdev
-        float diff = 0;
-        if (!al.isEmpty()) {
-            Iterator it = al.iterator();
-            while (it.hasNext()) {
-                mesures mes = (mesures) it.next();
-                if (it.hasNext()) { // if we have n+1 days, we don't count the last day on the average
-                    if (mes.value > 0) {
-                        diff += (mes.value - moyenne) * (mes.value - moyenne);
+            // stdev
+            float diff = 0;
+            if (!al.isEmpty()) {
+                Iterator it = al.iterator();
+                while (it.hasNext()) {
+                    mesures mes = (mesures) it.next();
+                    if (it.hasNext()) { // if we have n+1 days, we don't count the last day on the average
+                        if (mes.value > 0) {
+                            diff += (mes.value - moyenne) * (mes.value - moyenne);
+                        }
                     }
                 }
             }
-        }
 
-        double stdev = Math.sqrt(diff / count);
+            double stdev = Math.sqrt(diff / count);
         //System.out.println("stedv = " + stdev + " ; moyenne = " + moyenne);
 
-        // alert
-        if (!al.isEmpty()) {
+            // alert
+            if (!al.isEmpty()) {
 
-            mesures mes = (mesures) al.get(al.size() - 1);
+                mesures mes = (mesures) al.get(al.size() - 1);
 
-            //Iterator it = al.iterator();
-            //while (it.hasNext()) {
-            //    mesures mes = (mesures) it.next();
-            if (mes.value > 0) {
-                if (mes.value < moyenne - (1.5 * stdev)) {
+                //Iterator it = al.iterator();
+                //while (it.hasNext()) {
+                //    mesures mes = (mesures) it.next();
+                if (mes.value > 0) {
+                    if (mes.value < moyenne - (1.5 * stdev)) {
 
                         //%08d%n
-                    //System.out.format("%4d%02d%02d : (%.1f,%.1f) %d (moy=%f, stdev=%f) - EVENT%n",mes.yyyy,mes.mm,mes.dd,mes.lat,mes.lon,mes.value,moyenne,stdev);
-                    //System.out.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f EVENT%n", mes.yyyy, mes.mm, mes.dd, mes.lat, mes.lon, mes.value, moyenne, stdev);
-                    result = String.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f EVENT", mes.yyyy, mes.mm, mes.dd, mes.lat, mes.lon, mes.value, moyenne, stdev);
-                    //System.out.println(mes.yyyy +"" + mes.mm +""+ mes.dd + " : (" +mes.lat+","+mes.lon+") "+mes.value + "(moy=" + moyenne + ", stdev=" + stdev + ")");
-                } else {
+                        //System.out.format("%4d%02d%02d : (%.1f,%.1f) %d (moy=%f, stdev=%f) - EVENT%n",mes.yyyy,mes.mm,mes.dd,mes.lat,mes.lon,mes.value,moyenne,stdev);
+                        //System.out.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f EVENT%n", mes.yyyy, mes.mm, mes.dd, mes.lat, mes.lon, mes.value, moyenne, stdev);
+                        result = String.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f EVENT", mes.yyyy, mes.mm, mes.dd, mes.lat, mes.lon, mes.value, moyenne, stdev);
+                        //System.out.println(mes.yyyy +"" + mes.mm +""+ mes.dd + " : (" +mes.lat+","+mes.lon+") "+mes.value + "(moy=" + moyenne + ", stdev=" + stdev + ")");
+                    } else {
 //                        System.out.format("%4d%02d%02d : (%.1f,%.1f) %d (moy=%f, stdev=%f)%n",mes.yyyy,mes.mm,mes.dd,mes.lat,mes.lon,mes.value,moyenne,stdev);
-                    //System.out.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f NORMAL%n", mes.yyyy, mes.mm, mes.dd, mes.lat, mes.lon, mes.value, moyenne, stdev);
-                    result = String.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f NORMAL", mes.yyyy, mes.mm, mes.dd, mes.lat, mes.lon, mes.value, moyenne, stdev);
+                        //System.out.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f NORMAL%n", mes.yyyy, mes.mm, mes.dd, mes.lat, mes.lon, mes.value, moyenne, stdev);
+                        result = String.format("%4d%02d%02d  %.1f %.1f %d %.3f %.3f NORMAL", mes.yyyy, mes.mm, mes.dd, mes.lat, mes.lon, mes.value, moyenne, stdev);
 
+                    }
                 }
+                //}
             }
-            //}
         }
 
         stop = System.currentTimeMillis();

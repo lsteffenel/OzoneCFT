@@ -7,6 +7,7 @@ package ozonecft;
  */
 import cloudfit.core.CoreORB;
 import cloudfit.core.CoreQueue;
+import cloudfit.core.RessourceManager;
 import cloudfit.core.TheBigFactory;
 import cloudfit.network.NetworkAdapterInterface;
 import cloudfit.network.TomP2PAdapter;
@@ -16,18 +17,18 @@ import cloudfit.storage.FileContainer;
 import cloudfit.storage.StorageAdapterInterface;
 import cloudfit.util.Number160;
 import java.io.File;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,7 +37,6 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
@@ -50,6 +50,7 @@ public class Submitter {
     private static List<String> filenames = new java.util.concurrent.CopyOnWriteArrayList<String>();
     private static Community community;
     private static CoreORB TDTR;
+    private static String scopeName = "vlan0";
 
     public static void main(String[] args) {
         long start;
@@ -90,7 +91,7 @@ public class Submitter {
                 .hasArg()
                 .withDescription("the grid step (1 degree, 0.25 degrees)")
                 .create("step");
-        
+
         Option node = OptionBuilder.withArgName("node")
                 .hasArg()
                 .withDescription("Optional address to join the P2P network")
@@ -99,6 +100,10 @@ public class Submitter {
                 .hasArg()
                 .withDescription("Optional port to join the P2P network")
                 .create("port");
+        Option scope = OptionBuilder.withArgName("scope")
+                .hasArg()
+                .withDescription("the name of the community to start with")
+                .create("scope");
 
         options.addOption(help);
         options.addOption(src);
@@ -110,6 +115,7 @@ public class Submitter {
         options.addOption(dates);
         options.addOption(node);
         options.addOption(port);
+        options.addOption(scope);
 
         // create the parser
         CommandLineParser parser = new PosixParser();
@@ -137,7 +143,13 @@ public class Submitter {
             peer = new InetSocketAddress(InetAddress.getLoopbackAddress(), 7777);
         }
 
-        initNetwork(peer);
+        if (line.hasOption("scope")) {
+            scopeName = line.getOptionValue("scope");
+        }
+
+        //initNetwork(peer);
+        
+        community = TheBigFactory.initNetwork(peer, scopeName);
 
         start = System.currentTimeMillis();
 
@@ -198,13 +210,12 @@ public class Submitter {
                 toto.add("89.5");
                 toto.add("179.5");
             }
-            
-            String steps="1";
+
+            String steps = "1";
             if (line.hasOption("step")) {
                 steps = line.getOptionValue("step");
             }
             toto.add(steps);
-            
 
             String datesargs[] = null;
 
@@ -276,7 +287,7 @@ public class Submitter {
 
                     Date debut = sdf.parse(datesargs[0]);
                     Date fin = sdf.parse(datesargs[1]);
-                    Date interval = addDays(fin, -1 * (Integer.parseInt(per)-1));
+                    Date interval = addDays(fin, -1 * (Integer.parseInt(per) - 1));
 
                     for (int i = 0; i < (plainfiles.size() - Integer.parseInt(per)); i++) {
                         ArrayList<String> days = new ArrayList<String>();
@@ -339,18 +350,29 @@ public class Submitter {
 
         TDTR.setQueue(queue);
 
-        /* creates a module to plug on the main class
-         * and subscribe it to the messaging system
+        /* Creates a ressource Manager
          */
-        community = new Community(1, TDTR);
+        RessourceManager rm = TheBigFactory.getRM();
+
+        
 
         //NetworkAdapterInterface P2P = new EasyPastryDHTAdapter(queue, peer, community);
-        NetworkAdapterInterface P2P = new TomP2PAdapter(queue, peer, community);
+        NetworkAdapterInterface P2P = new TomP2PAdapter(queue, peer);
 
         TDTR.setNetworkAdapter(P2P);
 
+        /* creates a module to plug on the main class
+         * and subscribe it to the messaging system
+         */
+        community = TheBigFactory.getCommunity(scopeName, TDTR, rm);
+        
         TDTR.subscribe(community);
 
+        if (!scopeName.equals("vlan0")) {
+            // also creates a default community for "nameless" jobs
+            Community vlan0 = TheBigFactory.getCommunity("vlan0", TDTR, rm);
+            TDTR.subscribe(vlan0);
+        }
         //TDTR.setStorage(new SerializedDiskStorage());
         TDTR.setStorage((StorageAdapterInterface) P2P);
 
@@ -363,16 +385,29 @@ public class Submitter {
         Serializable result = null;
         try {
             // ici on indique la classe qui fera le MAP
-            mapperId = community.plug(jar, app, mapargs);
+            Properties reqs = new Properties();
+            reqs.put("Mem", "4G");
+            reqs.put("Disk", "30G");
+            mapperId = community.plug(jar, app, mapargs,reqs);
+            //System.err.println(mapargs[mapargs.length - 1]);
             System.err.println("mapperId = " + mapperId);
             result = community.waitJob(mapperId);
-            
-            ArrayList al = (ArrayList)result;
-            for (int i = 0; i<al.size(); ++i)
-            {
-                System.out.println(al.get(i));
+
+            PrintWriter out = new PrintWriter("out-" + mapargs[mapargs.length - 1]);
+
+            ArrayList al = (ArrayList) result;
+            for (int i = 0; i < al.size(); ++i) {
+                String res = (String) al.get(i);
+                if (!res.isEmpty()) {
+
+                    System.out.println(res);
+                    out.println(res);
+                    //out.flush();
+                }
+
             }
-            
+            out.close();
+
             //community.removeJob(mapperId);
         } catch (Exception ex) {
             //Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
@@ -440,7 +475,7 @@ public class Submitter {
             Date dateEnd = simpleDateFormat.parse(end);
 
             //time is always 00:00:00 so rounding should help to ignore the missing hour when going from winter to summer time as well as the extra hour in the other direction
-            diff = Math.round((dateEnd.getTime() - dateStart.getTime()) / (double) 86400000)+1; // +1 because the difference must be "inclusive" (15<->1=15)
+            diff = Math.round((dateEnd.getTime() - dateStart.getTime()) / (double) 86400000) + 1; // +1 because the difference must be "inclusive" (15<->1=15)
         } catch (Exception e) {
             //handle the exception according to your own situation
         }
