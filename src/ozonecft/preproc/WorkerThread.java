@@ -31,61 +31,91 @@ public class WorkerThread implements Runnable {
 
         O3 o3 = parse(entryFile);
 
-        String toto = new String();
-        toto = toto.concat(Integer.toString(o3.getDate().get(Calendar.YEAR)) + " ");
-        toto = toto.concat(((o3.getDate().get(Calendar.MONTH) + 1) < 10) ? "0" : "");
-        toto = toto.concat(Integer.toString((o3.getDate().get(Calendar.MONTH) + 1)) + " ");
-        toto = toto.concat(((o3.getDate().get(Calendar.DAY_OF_MONTH)) < 10) ? "0" : "");
-        toto = toto.concat(Integer.toString(o3.getDate().get(Calendar.DAY_OF_MONTH)));
+        String reading = new String();
+        //reading = reading.concat(Integer.toString(o3.getDate().get(Calendar.YEAR)) + " ");
+        reading = reading.concat(Integer.toString(o3.getDate().get(Calendar.YEAR)) + "-");       
+        reading = reading.concat(((o3.getDate().get(Calendar.MONTH) + 1) < 10) ? "0" : "");
+        //reading = reading.concat(Integer.toString((o3.getDate().get(Calendar.MONTH) + 1)) + " ");
+        reading = reading.concat(Integer.toString((o3.getDate().get(Calendar.MONTH) + 1)) + "-");
+        reading = reading.concat(((o3.getDate().get(Calendar.DAY_OF_MONTH)) < 10) ? "0" : "");
+        reading = reading.concat(Integer.toString(o3.getDate().get(Calendar.DAY_OF_MONTH)));
 
-        String filename = toto.replace(" ", "");
+        String filename = reading.replace(" ", "");
         filename = filename.concat(".txt");
         FileHandler fh = new FileHandler(new File(filename));
 
-        for (float lat = o3.getinitLat(); lat <= (-o3.getinitLat()); lat = (float) (lat + o3.getdLat())) {
+        float lat = 0;
+        String line;
 
-            /* spaces */
-                String line = new String(toto + " " + lat + " " + o3.getinitLon() + " " + o3.getdLon());
-                for (float lon = o3.getinitLon(); lon <= (-o3.getinitLon()); lon = (float) (lon + o3.getdLon())) {
-                    line = line.concat(" " + o3.getValue(lat, lon));
+//        // text output
+//        for (lat = o3.getinitLat(); lat <= (-o3.getinitLat()); lat = (float) (lat + o3.getdLat())) {
+//
+//            /* spaces */
+//            line = new String(reading + " " + lat + " " + o3.getinitLon() + " " + o3.getdLon());
+//            for (float lon = o3.getinitLon(); lon <= (-o3.getinitLon()); lon = (float) (lon + o3.getdLon())) {
+//                line = line.concat(" " + o3.getValue(lat, lon));
+//            }
+//            line = line.concat("\n");
+//
+//            /* tabs */
+////                String line = new String(reading + "\t" + lat + "\t" + o3.getinitLon() + "\t" + o3.getdLon());
+////                for (float lon = o3.getinitLon(); lon <= (-o3.getinitLon()); lon = (float) (lon + o3.getdLon())) {
+////                    line = line.concat("\t" + o3.getValue(lat, lon));
+////                }
+////                line = line.concat("\n");
+//
+//            /* bag */
+////            String line = new String(reading + "\t" + lat + "\t" + o3.getinitLon() + "\t" + o3.getdLon() + "\t{");
+////            for (float lon = o3.getinitLon(); lon <= (-o3.getinitLon()); lon = (float) (lon + o3.getdLon())) {
+////                line = line.concat("(" + o3.getValue(lat, lon) + ")");
+////                if (lon<(-o3.getinitLon())) 
+////                {
+////                    line = line.concat(",");
+////                }
+////            }
+////            line = line.concat("}\n");
+//
+//            /* map */
+////            String line = new String(reading + "\t" + lat + "\t" + o3.getinitLon() + "\t" + o3.getdLon()) + "\t[";
+////            for (float lon = o3.getinitLon(); lon <= (-o3.getinitLon()); lon = (float) (lon + o3.getdLon())) {
+////                line = line.concat(lon + "#" + o3.getValue(lat, lon));
+////                if (lon<(-o3.getinitLon())) 
+////                {
+////                    line = line.concat(",");
+////                }
+////            }
+////            line = line.concat("]\n");
+        /* JSON 
+{
+"date":"20130101",
+"step":"1.0",
+"latitudes":{"-89.5":{"-179.5":"280","-178.5":"280"}, 
+             "-88.5":{"-179.5":"272","-178.5":"272"}
+}
+}
+         */
+        line = new String("{\"date\":\"" + reading + "\","
+                + "\"step\":\"" + o3.getdLon() + "\","
+                + "\"latitudes\":{");
+        for (lat = o3.getinitLat(); lat <= (-o3.getinitLat()); lat = (float) (lat + o3.getdLat())) {
+            line=line.concat("\"" + lat + "\":{");
+            for (float lon = o3.getinitLon(); lon <= (-o3.getinitLon()); lon = (float) (lon + o3.getdLon())) {
+                line = line.concat("\"" + lon + "\":\"" + o3.getValue(lat, lon) + "\"");
+                if (lon < (-o3.getinitLon())) {
+                    line = line.concat(",");
                 }
-                line = line.concat("\n");
-
-            /* tabs */
-//                String line = new String(toto + "\t" + lat + "\t" + o3.getinitLon() + "\t" + o3.getdLon());
-//                for (float lon = o3.getinitLon(); lon <= (-o3.getinitLon()); lon = (float) (lon + o3.getdLon())) {
-//                    line = line.concat("\t" + o3.getValue(lat, lon));
-//                }
-//                line = line.concat("\n");
-
-            /* bag */
-//            String line = new String(toto + "\t" + lat + "\t" + o3.getinitLon() + "\t" + o3.getdLon() + "\t{");
-//            for (float lon = o3.getinitLon(); lon <= (-o3.getinitLon()); lon = (float) (lon + o3.getdLon())) {
-//                line = line.concat("(" + o3.getValue(lat, lon) + ")");
-//                if (lon<(-o3.getinitLon())) 
-//                {
-//                    line = line.concat(",");
-//                }
-//            }
-//            line = line.concat("}\n");
-
-            /* map */
-//            String line = new String(toto + "\t" + lat + "\t" + o3.getinitLon() + "\t" + o3.getdLon()) + "\t[";
-//            for (float lon = o3.getinitLon(); lon <= (-o3.getinitLon()); lon = (float) (lon + o3.getdLon())) {
-//                line = line.concat(lon + "#" + o3.getValue(lat, lon));
-//                if (lon<(-o3.getinitLon())) 
-//                {
-//                    line = line.concat(",");
-//                }
-//            }
-//            line = line.concat("]\n");
-
-            fh.writeLine(line);
-//            System.out.println("");           
+            }
+            line = line.concat("}");
+            if (lat < (-o3.getinitLat())) {
+                line = line.concat(",");
+            }
         }
+        line = line.concat("}}");
 
-        // fh.writeLine("test");
+        fh.writeLine(line);
+
         fh.flushing();
+
         fh.close();
 
         System.out.println(Thread.currentThread().getName() + " End.");
@@ -108,8 +138,10 @@ public class WorkerThread implements Runnable {
         SimpleDateFormat sdf = new SimpleDateFormat("dd,MMM yyyy HH:mm a", Locale.ENGLISH);
         try {
             date.setTime(sdf.parse(formattedString));
+
         } catch (ParseException ex) {
-            Logger.getLogger(WorkerThread.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WorkerThread.class
+                    .getName()).log(Level.SEVERE, null, ex);
         }
 
         //System.out.println(date.get(Calendar.DAY_OF_YEAR));
