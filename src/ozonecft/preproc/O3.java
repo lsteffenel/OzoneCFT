@@ -92,7 +92,7 @@ public class O3 {
         ozone[latit][longit] = value;
     }
     
-    public int getValue(float latitude, float longitude) {
+    public int getValue(float latitude, float longitude) throws PositionNotFoundException { // throws something ?
         int xpos=0,ypos=0;
         
         for (int i = 0; i<lat.length;++i) {

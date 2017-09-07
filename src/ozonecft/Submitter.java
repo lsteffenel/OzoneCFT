@@ -6,17 +6,13 @@ package ozonecft;
  * and open the template in the editor.
  */
 import cloudfit.core.CoreORB;
-import cloudfit.core.CoreQueue;
-import cloudfit.core.RessourceManager;
 import cloudfit.core.TheBigFactory;
-import cloudfit.network.NetworkAdapterInterface;
-import cloudfit.network.TomP2PAdapter;
 import cloudfit.service.Community;
 import cloudfit.storage.DHTStorageUnit;
 import cloudfit.storage.FileContainer;
-import cloudfit.storage.StorageAdapterInterface;
 import cloudfit.util.Number160;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -243,34 +239,35 @@ public class Submitter {
 
             if (line.hasOption("src")) {
 
-                List<String> files = loadInput(line.getOptionValue("src"));
-
-                System.err.println(files);
-                System.err.println(files.size());
-
-                Iterator it = files.iterator();
-                int number = 0;
-                while (it.hasNext()) {
-                    String file = (String) it.next();
-                    long init = System.currentTimeMillis();
-                    FileContainer fc = new FileContainer(file);
-                    DHTStorageUnit dsu = new DHTStorageUnit(null, -1, (Serializable) fc);
-
-                    //((StorageAdapterInterface)P2P).blocking_save("input.data" + number, dsu, false);
-                    community.save(dsu, fc.getName());
-
-                    //save("input.data" + number, fc, false, number); 
-                    // number++;
-                    long fin = System.currentTimeMillis();
-
-                    if (!fc.getName().endsWith(".jar")) {
-                        plainfiles.add(fc.getName());
-                        //toto.add(fc.getName());
-                    }
-                    System.err.println(fc.getName() + " (" + number + ") saved in " + (fin - init) + " ms");
-
-                    //System.gc();
-                }
+                plainfiles = community.saveSrc(line.getOptionValue("src"));
+//                List<String> files = loadInput(line.getOptionValue("src"));
+//
+//                System.err.println(files);
+//                System.err.println(files.size());
+//
+//                Iterator it = files.iterator();
+//                int number = 0;
+//                while (it.hasNext()) {
+//                    String file = (String) it.next();
+//                    long init = System.currentTimeMillis();
+//                    FileContainer fc = new FileContainer(file);
+//                    DHTStorageUnit dsu = new DHTStorageUnit(null, -1, (Serializable) fc);
+//
+//                    //((StorageAdapterInterface)P2P).blocking_save("input.data" + number, dsu, false);
+//                    community.save(dsu, fc.getName());
+//
+//                    //save("input.data" + number, fc, false, number); 
+//                    // number++;
+//                    long fin = System.currentTimeMillis();
+//
+//                    if (!fc.getName().endsWith(".jar")) {
+//                        plainfiles.add(fc.getName());
+//                        //toto.add(fc.getName());
+//                    }
+//                    System.err.println(fc.getName() + " (" + number + ") saved in " + (fin - init) + " ms");
+//
+//                    //System.gc();
+//                }
                 System.gc();
 
             }
@@ -334,51 +331,51 @@ public class Submitter {
 
     }
 
-    private static void initNetwork(InetSocketAddress peer) {
-        ///////////////////// Pastry
-
-        /* Declaration of the main class
-         * all the internal initialization is made on the constructor
-         */
-        TDTR = (CoreORB) TheBigFactory.getORB();
-
-
-        /* Define if connecting to a peer or network discovery
-         * 
-         */
-        CoreQueue queue = TheBigFactory.getCoreQueue();
-
-        TDTR.setQueue(queue);
-
-        /* Creates a ressource Manager
-         */
-        RessourceManager rm = TheBigFactory.getRM();
-
-        
-
-        //NetworkAdapterInterface P2P = new EasyPastryDHTAdapter(queue, peer, community);
-        NetworkAdapterInterface P2P = new TomP2PAdapter(queue, peer);
-
-        TDTR.setNetworkAdapter(P2P);
-
-        /* creates a module to plug on the main class
-         * and subscribe it to the messaging system
-         */
-        community = TheBigFactory.getCommunity(scopeName, TDTR, rm);
-        
-        TDTR.subscribe(community);
-
-        if (!scopeName.equals("vlan0")) {
-            // also creates a default community for "nameless" jobs
-            Community vlan0 = TheBigFactory.getCommunity("vlan0", TDTR, rm);
-            TDTR.subscribe(vlan0);
-        }
-        //TDTR.setStorage(new SerializedDiskStorage());
-        TDTR.setStorage((StorageAdapterInterface) P2P);
-
-        System.err.println("starting network");
-
-    }
+//    private static void initNetwork(InetSocketAddress peer) {
+//        ///////////////////// Pastry
+//
+//        /* Declaration of the main class
+//         * all the internal initialization is made on the constructor
+//         */
+//        TDTR = (CoreORB) TheBigFactory.getORB();
+//
+//
+//        /* Define if connecting to a peer or network discovery
+//         * 
+//         */
+//        CoreQueue queue = TheBigFactory.getCoreQueue();
+//
+//        TDTR.setQueue(queue);
+//
+//        /* Creates a ressource Manager
+//         */
+//        RessourceManager rm = TheBigFactory.getRM();
+//
+//        
+//
+//        //NetworkAdapterInterface P2P = new EasyPastryDHTAdapter(queue, peer, community);
+//        NetworkAdapterInterface P2P = new TomP2PAdapter(queue, peer);
+//
+//        TDTR.setNetworkAdapter(P2P);
+//
+//        /* creates a module to plug on the main class
+//         * and subscribe it to the messaging system
+//         */
+//        community = TheBigFactory.getCommunity(scopeName, TDTR, rm);
+//        
+//        TDTR.subscribe(community);
+//
+//        if (!scopeName.equals("vlan0")) {
+//            // also creates a default community for "nameless" jobs
+//            Community vlan0 = TheBigFactory.getCommunity("vlan0", TDTR, rm);
+//            TDTR.subscribe(vlan0);
+//        }
+//        //TDTR.setStorage(new SerializedDiskStorage());
+//        TDTR.setStorage((StorageAdapterInterface) P2P);
+//
+//        System.err.println("starting network");
+//
+//    }
 
     private static Serializable runApp(Community community, String jar, String app, String[] mapargs) {
         Number160 mapperId = null;// Identifiant de l'instance Mapper
@@ -386,8 +383,23 @@ public class Submitter {
         try {
             // ici on indique la classe qui fera le MAP
             Properties reqs = new Properties();
-            reqs.put("Mem", "4G");
-            reqs.put("Disk", "30G");
+            reqs.put("Thing.VM.Memory.Total", "60000");
+            reqs.put("Thing.Device.Storage.Available", "100000");
+            reqs.put("Thing.Device.Processor.Available","4");
+            reqs.put("Thing.Device.CPU.System.Load.Average", "4");
+            //Thing.Device.Storage.Available
+            //Thing.Device.Storage.Unallocated
+            //Thing.Device.Processor.Available
+            //Thing.Device.CPU.System.Load
+            //Thing.Device.CPU.System.Load.Average
+            //Thing.Device.Memory.Physical.Available
+            //Thing.Device.Memory.Physical.Total  
+            //Thing.Device.Memory.Swap.Available
+            //Thing.Device.Memory.Swap.Total
+            //Thing.VM.Memory.Available
+            //Thing.VM.Memory.Total
+            
+            
             mapperId = community.plug(jar, app, mapargs,reqs);
             //System.err.println(mapargs[mapargs.length - 1]);
             System.err.println("mapperId = " + mapperId);
@@ -409,7 +421,7 @@ public class Submitter {
             out.close();
 
             //community.removeJob(mapperId);
-        } catch (Exception ex) {
+        } catch (InterruptedException|FileNotFoundException ex) {
             //Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
         }
         return result;

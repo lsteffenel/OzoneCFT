@@ -30,7 +30,27 @@ public class WorkerThread implements Runnable {
         System.out.println(Thread.currentThread().getName() + " Start. Command = " + entryFile);
 
         O3 o3 = parse(entryFile);
-
+//        int i;
+//        for (double lat = -89.5; lat <= 89.5; lat=lat+1)
+//        {
+//            i=0;
+//            for (double lon = -179.5; lon <=179.5; lon=lon+1)
+//            {
+//                try 
+//                {   o3.getValue((float)lat, (float)lon);
+//                    System.out.print(".");
+//                } catch (PositionNotFoundException ex)
+//                {
+//                    System.out.print(" ");
+//                }
+//                i++;
+//                    
+//            }
+//            System.out.println(" - "+i);
+//        }
+//        
+//        System.exit(0); 
+       
         String reading = new String();
         //reading = reading.concat(Integer.toString(o3.getDate().get(Calendar.YEAR)) + " ");
         reading = reading.concat(Integer.toString(o3.getDate().get(Calendar.YEAR)) + "-");       
